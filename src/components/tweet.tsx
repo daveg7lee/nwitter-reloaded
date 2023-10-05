@@ -1,8 +1,30 @@
 import { styled } from "styled-components";
 import { ITweet } from "./timeline";
 import { auth, db, storage } from "../firebase";
-import { deleteDoc, doc } from "firebase/firestore";
+import { deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { deleteObject, ref } from "firebase/storage";
+import { ChangeEvent, useEffect, useState } from "react";
+
+const TextArea = styled.textarea`
+  margin: 14px 0px;
+  border: 2px solid white;
+  padding: 15px;
+  border-radius: 20px;
+  font-size: 16px;
+  color: white;
+  background-color: black;
+  width: 100%;
+  resize: none;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  &::placeholder {
+    font-size: 16px;
+  }
+  &:focus {
+    outline: none;
+    border-color: #1d9bf0;
+  }
+`;
 
 const Wrapper = styled.div`
   display: grid;
@@ -26,7 +48,7 @@ const Username = styled.span`
 `;
 
 const Payload = styled.p`
-  margin: 10px 0px;
+  margin: 14px 0px;
   font-size: 18px;
 `;
 
@@ -42,7 +64,31 @@ const DeleteButton = styled.button`
   cursor: pointer;
 `;
 
+const EditButton = styled.button`
+  background-color: #1d9bf0;
+  color: white;
+  font-weight: 600;
+  border: 0;
+  font-size: 12px;
+  padding: 5px 10px;
+  text-transform: uppercase;
+  border-radius: 5px;
+  margin-left: 5px;
+  cursor: pointer;
+`;
+
 export default function Tweet({ username, photo, tweet, userId, id }: ITweet) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState<string>("");
+
+  useEffect(() => {
+    setValue(tweet);
+  }, [tweet]);
+
+  const onChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    setValue(e.target.value);
+  };
+
   const user = auth.currentUser;
   const onDelete = async () => {
     const ok = confirm("Are you sure you want to delete this tweet?");
@@ -55,16 +101,46 @@ export default function Tweet({ username, photo, tweet, userId, id }: ITweet) {
       }
     } catch (e) {
       console.log(e);
-    } finally {
     }
   };
+
+  const onClickEdit = async () => {
+    if (user?.uid !== userId) return;
+
+    try {
+      if (editing) {
+        await updateDoc(doc(db, "tweets", id), { tweet: value });
+      }
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setEditing(!editing);
+    }
+  };
+
   return (
     <Wrapper>
       <Column>
         <Username>{username}</Username>
-        <Payload>{tweet}</Payload>
+        {editing ? (
+          <TextArea
+            required
+            rows={2}
+            maxLength={200}
+            onChange={onChange}
+            value={value}
+            placeholder="What is happening?"
+          />
+        ) : (
+          <Payload>{tweet}</Payload>
+        )}
         {user?.uid === userId ? (
           <DeleteButton onClick={onDelete}>Delete</DeleteButton>
+        ) : null}
+        {user?.uid === userId ? (
+          <EditButton onClick={onClickEdit}>
+            {editing ? "Submit" : "Edit"}
+          </EditButton>
         ) : null}
       </Column>
       <Column>{photo ? <Photo src={photo} /> : null}</Column>
