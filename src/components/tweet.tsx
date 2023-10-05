@@ -3,7 +3,7 @@ import { ITweet } from "./timeline";
 import { auth, db, storage } from "../firebase";
 import { deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { deleteObject, ref } from "firebase/storage";
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, useState } from "react";
 
 const TextArea = styled.textarea`
   margin: 14px 0px;
@@ -79,11 +79,7 @@ const EditButton = styled.button`
 
 export default function Tweet({ username, photo, tweet, userId, id }: ITweet) {
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState<string>("");
-
-  useEffect(() => {
-    setValue(tweet);
-  }, [tweet]);
+  const [value, setValue] = useState<string>(tweet);
 
   const onChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     setValue(e.target.value);
